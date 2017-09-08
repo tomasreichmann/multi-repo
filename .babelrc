@@ -1,0 +1,13 @@
+{
+    "presets": ["env"],
+    "plugins": [
+        "transform-object-rest-spread",
+        "transform-async-to-generator",
+        "syntax-async-functions",
+        "transform-async-generator-functions",
+        ["transform-runtime", {
+            "polyfill": false,
+            "regenerator": true
+        }]
+    ]
+}
