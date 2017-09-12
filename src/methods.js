@@ -17,6 +17,14 @@ function logExec(err, stdout) {
     }
 }
 
+function exitOk(){
+    process.exit(0);
+};
+
+function exitError(){
+    process.exit(1);
+};
+
 function inquireConfigRepo(repos = {}) {
     return inquirer.prompt([{
         name: 'label',
@@ -147,8 +155,10 @@ async function runAllCommands(commands){
             continue;
         }
         console.log(chalk.green('batch done\n'));
+        return Promise.resolve();
     } catch(err) {
-        console.error('err', chalk.red(err.toString()));
+        console.error(chalk.red(err.toString()));
+        return Promise.reject(err);
     }
 }
 
@@ -198,9 +208,7 @@ const makeNewBranchOnAllReposCommands = (reposMap = config.repos, branchName = '
             },
         ])
     ];
-
     return getAllReposCommands(reposMap, commands);
-
 }
 
 // --- Exports ---
@@ -215,13 +223,13 @@ export function initConfig(config) {
         }]).then(function (answers) {
             const {overwrite} = answers;
             if (overwrite === 'yes') {
-                inquireConfig();
-            } else {
-                console.log(chalk.yellow('Init config aborted'));
+                return inquireConfig();
             }
+            console.log(chalk.yellow('Init config aborted'));
+            process.exit(1);
         });
     } else {
-        inquireConfig();
+        return inquireConfig();
     }
 }
 
@@ -278,15 +286,17 @@ export function addRepo(cwd = '.', config = { repos: {} }) {
                 [repo.key]: repo
             }
         };
-        if (config) {
+        return new Promise( (resolve, reject) => {
             writeFile(CONFIG_PATH, JSON.stringify(newConfig, null, '\t'), function(err) {
                 if(err) {
-                    return console.log(chalk.red.bold(err));
+                    console.log(chalk.red.bold(err));
+                    return reject(err);
                 }
                 console.log(chalk.green.bold('\nConfig saved as ' + CONFIG_PATH));
+                resolve();
             });
-        }
-    } )
+        } );
+    } ).then( exitOk, exitError );
 }
 
 export function batch(config) {
@@ -299,19 +309,20 @@ export function batch(config) {
             console.log(chalk.blue('\nRunning ' + commands.length + ' commands in ' + Object.keys(reposMap).map( key => (reposMap[key].label) ).join(', ') ));
             return runAllCommands(getAllReposCommands(reposMap, commands));
         } )
-    });
+    }).then( exitOk, exitError );
 }
 
 export function gitStatus(options, config) {
     return selectRepos('Which repos, do you want to get status of?', config).then(function (reposMap) {
         console.log(chalk.blue('Git status of ' + Object.keys(reposMap).map( key => (reposMap[key].label) ).join(', ') ));
         return runAllCommands(getAllReposCommands(reposMap, [{ command: 'git status' }]));
-    });
+    }).then( exitOk, exitError );
 }
 
 export function makeBranch(branchName, config) {
     if (!branchName) {
-        return console.log(chalk.red('missing branch name. E.g: multi-repos --make-branch [branchName]'));
+        console.log(chalk.red('missing branch name. E.g: multi-repos --make-branch [branchName]'));
+        return exitError();
     }
     return selectRepos('Which repos, do you want to create a branch on?', config).then(function (reposMap) {
         console.log(chalk.blue('Creating branch name ' + branchName + ' in ' + Object.keys(reposMap).map( key => (reposMap[key].label) ).join(', ') ));
@@ -320,5 +331,5 @@ export function makeBranch(branchName, config) {
                 return runAllCommands(makeNewBranchOnAllReposCommands(reposMap, branchName, keepBranch, customCommands))
             } );
         });
-    });
+    }).then( exitOk, exitError );
 }
