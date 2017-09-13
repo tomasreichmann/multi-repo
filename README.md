@@ -21,7 +21,7 @@ You'll be asked about:
 * absolute path to the repository e.g. "/Users/myuser/workspace/myrepository"
 * source branch that is sometimes used to branch from e.g. "master"
 
-TODO: Alternatively, you can add each repository from it's folder
+Alternatively, you can add each repository from it's folder
 
     multi-repo --add
 

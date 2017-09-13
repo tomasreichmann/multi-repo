@@ -9,5 +9,6 @@
             "polyfill": false,
             "regenerator": true
         }]
-    ]
+    ],
+    "ignore": "\\.test\\.js"
 }

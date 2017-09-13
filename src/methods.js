@@ -50,10 +50,10 @@ function inquireConfigRepo(repos = {}) {
     } );
 }
 
-function inquireConfig() {
+function inquireConfig(configPath) {
     inquireConfigRepo().then( (repos) => {
         const newConfig = {repos};
-        writeFile(CONFIG_PATH, JSON.stringify(newConfig, null, '\t'), function(err) {
+        writeFile(configPath, JSON.stringify(newConfig, null, '\t'), function(err) {
             if(err) {
                 return console.log(chalk.red.bold(err));
             }
@@ -213,29 +213,28 @@ const makeNewBranchOnAllReposCommands = (reposMap = config.repos, branchName = '
 
 // --- Exports ---
 
-export function initConfig(config) {
+export function initConfig(config, configPath = CONFIG_PATH) {
     if ( config ) {
         inquirer.prompt([{
             name: 'overwrite',
             type: 'input',
             default: 'no',
-            message: CONFIG_PATH + ' already exists. Do you wish to overwrite it?',
+            message: configPath + ' already exists. Do you wish to overwrite it?',
         }]).then(function (answers) {
             const {overwrite} = answers;
             if (overwrite === 'yes') {
-                return inquireConfig();
+                return inquireConfig(configPath);
             }
             console.log(chalk.yellow('Init config aborted'));
             process.exit(1);
         });
     } else {
-        return inquireConfig();
+        return inquireConfig(configPath);
     }
 }
 
-export function addRepo(cwd = '.', config = { repos: {} }) {
+export function addRepo(cwd = '.', config = { repos: {} }, configPath = CONFIG_PATH) {
     const absolutePath = resolvePath(cwd);
-
     const gitPath = joinPath(cwd,'/.git');
     const hasGit = existsSync(gitPath);
 
@@ -287,12 +286,12 @@ export function addRepo(cwd = '.', config = { repos: {} }) {
             }
         };
         return new Promise( (resolve, reject) => {
-            writeFile(CONFIG_PATH, JSON.stringify(newConfig, null, '\t'), function(err) {
+            writeFile(configPath, JSON.stringify(newConfig, null, '\t'), function(err) {
                 if(err) {
                     console.log(chalk.red.bold(err));
                     return reject(err);
                 }
-                console.log(chalk.green.bold('\nConfig saved as ' + CONFIG_PATH));
+                console.log(chalk.green.bold('\nConfig saved as ' + configPath));
                 resolve();
             });
         } );
